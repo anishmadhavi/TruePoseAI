@@ -1,24 +1,29 @@
-// --- worker/src/auth.js: verify a Supabase access token ---
-// Supabase issues ES256 (asymmetric) user tokens. Rather than verify the
-// signature locally, we ask Supabase's auth API who the token belongs to.
-// Simple and reliable: if Supabase accepts the token, it's valid.
+// --- worker/src/auth.js: verify a Supabase access token (with diagnostics) ---
 
 export async function verifyToken(token, env) {
-    if (!token) throw new Error('NO_TOKEN');
+    if (!token) throw new Error('NO_TOKEN: no bearer token in Authorization header');
 
-    const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': env.SUPABASE_SERVICE_ROLE_KEY
-        }
-    });
+    let res;
+    try {
+        res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY
+            }
+        });
+    } catch (e) {
+        throw new Error(`FETCH_FAILED: could not reach ${env.SUPABASE_URL}/auth/v1/user (${e.message})`);
+    }
 
-    if (!res.ok) throw new Error('BAD_TOKEN');
+    if (!res.ok) {
+        let body = '';
+        try { body = await res.text(); } catch (_) {}
+        throw new Error(`SUPABASE_REJECTED: /auth/v1/user returned ${res.status} ${body.slice(0,200)}`);
+    }
 
     const user = await res.json();
-    if (!user || !user.id) throw new Error('NO_SUBJECT');
+    if (!user || !user.id) throw new Error('NO_USER_ID: Supabase response had no user id');
 
-    // Match the old shape: payload.sub = the owner's user id
     return { sub: user.id, email: user.email };
 }
 
