@@ -1,23 +1,28 @@
-// --- worker/src/auth.js: verify a Supabase access token (with diagnostics) ---
+// --- worker/src/auth.js: verify a Supabase access token (Updated for New Supabase Auth) ---
 
 export async function verifyToken(token, env) {
     if (!token) throw new Error('NO_TOKEN: no bearer token in Authorization header');
 
     let res;
     try {
+        // Use the new Publishable Key (or fallback to anon key) for the API gateway
+        const apiKey = env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY;
+        
         res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'apikey': env.SUPABASE_SERVICE_ROLE_KEY
+                'apikey': apiKey
             }
         });
     } catch (e) {
-        throw new Error(`FETCH_FAILED: could not reach ${env.SUPABASE_URL}/auth/v1/user (${e.message})`);
+        throw new Error(`FETCH_FAILED: could not reach Supabase (${e.message})`);
     }
 
     if (!res.ok) {
         let body = '';
         try { body = await res.text(); } catch (_) {}
+        
+        // Ensure error detail is formatted so index.js can catch it
         throw new Error(`SUPABASE_REJECTED: /auth/v1/user returned ${res.status} ${body.slice(0,200)}`);
     }
 
