@@ -61,6 +61,33 @@ export default {
         }
 
         try {
+        // ---- DEBUG: check env wiring + token, returns plain detail ----
+        if (path === '/api/debug' && request.method === 'GET') {
+            const token = getBearer(request);
+            const info = {
+                has_SUPABASE_URL: !!env.SUPABASE_URL,
+                SUPABASE_URL: env.SUPABASE_URL || null,
+                has_SERVICE_ROLE_KEY: !!env.SUPABASE_SERVICE_ROLE_KEY,
+                has_GEMINI_KEY: !!env.GEMINI_API_KEY,
+                has_BUCKET: !!env.BUCKET,
+                got_bearer_token: !!token,
+                token_prefix: token ? token.slice(0, 12) + '...' : null
+            };
+            // Try to validate the token and report exactly what happens
+            if (token) {
+                try {
+                    const u = await verifyToken(token, env);
+                    info.token_valid = true;
+                    info.user_id = u.sub;
+                } catch (e) {
+                    info.token_valid = false;
+                    info.verify_error = String(e.message || e);
+                }
+            }
+            return json(info, env);
+        }
+
+
             // ---- who am I / balance -------------------------------------
             if (path === '/api/me' && request.method === 'GET') {
                 const owner = await requireOwner(request, env);
@@ -210,7 +237,7 @@ export default {
         } catch (err) {
             const msg = String(err.message || err);
             // Map known auth/credit errors to clean statuses
-            if (/TOKEN|SIGNATURE|SUBJECT|NO_TOKEN|BAD_TOKEN/.test(msg)) return json({ error: 'UNAUTHORIZED' }, env, 401);
+            if (/TOKEN|SIGNATURE|SUBJECT|NO_TOKEN|BAD_TOKEN|FETCH_FAILED|SUPABASE_REJECTED|NO_USER_ID/.test(msg)) return json({ error: 'UNAUTHORIZED', detail: msg }, env, 401);
             if (msg.includes('NOT_APPROVED')) return json({ error: 'NOT_APPROVED' }, env, 403);
             if (msg.includes('INSUFFICIENT_CREDITS')) return json({ error: 'INSUFFICIENT_CREDITS' }, env, 402);
             if (msg.includes('OWNER_NOT_FOUND')) return json({ error: 'OWNER_NOT_FOUND' }, env, 404);
