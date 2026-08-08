@@ -1,0 +1,28 @@
+name = "truepose-ai-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# R2 bucket binding — create the bucket first (see README), then this name maps
+# the binding `BUCKET` used in the Worker code.
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "truepose-assets"
+
+# ---------------------------------------------------------------------------
+# Non-secret configuration (safe to commit). SECRETS are NOT here — set those
+# with `wrangler secret put NAME` (see README). Never commit real keys.
+# ---------------------------------------------------------------------------
+[vars]
+ALLOWED_ORIGIN = "*"            # set to your Pages URL in production, e.g. https://truepose.pages.dev
+IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+VIDEO_MODEL = "veo-3.1-lite-generate-preview"
+IMAGE_SIZE = "2K"
+VIDEO_SECONDS = "8"
+STORAGE_CAP = "200"
+MIN_GENERATION_BALANCE = "5"
+
+# Secrets to set via `wrangler secret put` (do NOT put values here):
+#   GEMINI_API_KEY
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   SUPABASE_JWT_SECRET

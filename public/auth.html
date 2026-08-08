@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruePose AI — Sign In</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="ph-fill ph-aperture"></i>
+            <h1>TruePose AI</h1>
+            <p>Real Models · Real Locations · Exact Prints</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-mode="signin">Sign In</button>
+            <button class="auth-tab" data-mode="signup">Create Account</button>
+        </div>
+
+        <div id="signupOnly" style="display:none;">
+            <label class="auth-label">Business Name</label>
+            <input type="text" id="businessName" class="auth-input" placeholder="Your brand / store name">
+        </div>
+
+        <label class="auth-label">Email</label>
+        <input type="email" id="email" class="auth-input" placeholder="you@business.com">
+
+        <label class="auth-label">Password</label>
+        <input type="password" id="password" class="auth-input" placeholder="••••••••">
+
+        <button id="authBtn" class="btn-gold" style="margin-top:16px;">Sign In</button>
+
+        <div id="authMsg" class="auth-msg"></div>
+
+        <p class="auth-note" id="signupNote" style="display:none;">
+            <i class="ph ph-info"></i> New accounts are reviewed before activation.
+            You'll receive your free credits once approved.
+        </p>
+    </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(function () {
+    let mode = 'signin';
+    const tabs = document.querySelectorAll('.auth-tab');
+    const btn = document.getElementById('authBtn');
+    const msg = document.getElementById('authMsg');
+
+    tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        mode = t.getAttribute('data-mode');
+        document.getElementById('signupOnly').style.display = mode === 'signup' ? 'block' : 'none';
+        document.getElementById('signupNote').style.display = mode === 'signup' ? 'block' : 'none';
+        btn.textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
+        msg.textContent = '';
+    }));
+
+    async function redirectIfIn() {
+        const { data } = await window.sb.auth.getSession();
+        if (data?.session) location.href = 'index.html';
+    }
+    redirectIfIn();
+
+    btn.addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const business = document.getElementById('businessName').value.trim();
+        msg.className = 'auth-msg';
+        msg.textContent = '';
+
+        if (!email || !password) { msg.textContent = 'Enter email and password.'; msg.classList.add('err'); return; }
+        btn.disabled = true;
+
+        try {
+            if (mode === 'signup') {
+                const { error } = await window.Auth.signUp(email, password, business);
+                if (error) throw error;
+                msg.textContent = 'Account created. It will be activated after review — you can sign in once approved.';
+                msg.classList.add('ok');
+            } else {
+                const { error } = await window.Auth.signIn(email, password);
+                if (error) throw error;
+                location.href = 'index.html';
+            }
+        } catch (e) {
+            msg.textContent = e.message || 'Something went wrong.';
+            msg.classList.add('err');
+        }
+        btn.disabled = false;
+    });
+})();
+</script>
+</body>
+</html>

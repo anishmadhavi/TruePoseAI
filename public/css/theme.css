@@ -1,0 +1,40 @@
+/* ============================================================================
+   TruePose AI — THEME
+   This is the ONE place to change the look. Edit these variables to reskin the
+   entire app (colors, accent, fonts, radii). No other file needs touching.
+   ============================================================================ */
+:root {
+    /* Core palette */
+    --bg-main:          #0a0a0c;
+    --bg-panel:         #14151a;
+    --bg-input:         #1e2028;
+
+    /* Brand accent (change these two to rebrand the whole UI) */
+    --accent:           #f5c518;
+    --accent-hover:     #d4a80e;
+    --accent-contrast:  #000000;   /* text/icon color that sits ON the accent */
+
+    /* Text */
+    --text-light:       #ffffff;
+    --text-muted:       #9ca3af;
+
+    /* Lines & status */
+    --border-color:     #2a2d35;
+    --ok:               #10b981;
+    --info:             #60a5fa;
+    --error:            #ef4444;
+    --warning:          #f59e0b;
+
+    /* Shape & type */
+    --radius:           8px;
+    --radius-sm:        6px;
+    --font-main:        'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono:        ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Backwards-compatible aliases so existing rules using the old names still work
+   — you can ignore these; they just map old variable names to the new ones. */
+:root {
+    --accent-gold:       var(--accent);
+    --accent-gold-hover: var(--accent-hover);
+}

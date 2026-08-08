@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruePose AI | Studio</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="top-nav">
+        <div class="brand-area">
+            <i class="ph-fill ph-aperture"></i>
+            <div class="brand-title">
+                <h1>TruePose AI</h1>
+                <p>Real Models · Real Locations · Exact Prints</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="credit-pill">
+                <i class="ph-fill ph-coins"></i>
+                <span><strong id="creditCount">–</strong> credits</span>
+                <span id="lowBalanceBadge" class="low-badge" style="display:none;"><i class="ph-bold ph-warning"></i> Low</span>
+            </div>
+            <div class="storage-pill" title="Stored items">
+                <i class="ph-bold ph-hard-drives"></i> <span id="storageCount">–</span>
+            </div>
+            <button id="logoutBtn" class="btn-dark" style="width:auto;padding:8px 14px;"><i class="ph-bold ph-sign-out"></i></button>
+        </div>
+    </div>
+
+    <div id="pendingBanner" class="pending-banner" style="display:none;">
+        <i class="ph-bold ph-hourglass-medium"></i>
+        Your account is awaiting approval. You'll receive your free credits and full access once approved.
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="photoshoot"><i class="ph-bold ph-camera"></i> Photoshoot Studio</button>
+        <button class="tab-btn" data-tab="modelcreation"><i class="ph-bold ph-user-focus"></i> Model Creation</button>
+        <button class="tab-btn" data-tab="video"><i class="ph-bold ph-video-camera"></i> Video</button>
+    </div>
+
+    <!-- ===== TAB 1: PHOTOSHOOT ===== -->
+    <div class="tab-pane active" id="tab-photoshoot">
+        <div class="grid-layout">
+            <div class="left-col">
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-upload-simple"></i> Assets</h2>
+
+                    <label class="upload-zone" id="garmentUploadZone">
+                        <input type="file" id="garmentUpload" accept="image/jpeg,image/png,image/webp,.heic" multiple>
+                        <div id="garmentPreviewGrid" class="preview-grid"></div>
+                        <div class="upload-content" id="garmentPrompt">
+                            <i class="ph ph-t-shirt"></i><span>Upload Garments (Max 10)</span><small>JPG, PNG, WEBP, HEIC</small>
+                        </div>
+                    </label>
+
+                    <h3 class="section-subtitle">Select AI Identity</h3>
+                    <div id="modelGallery" class="gallery-scroll"><div class="empty-gallery">Create a model in the Model Creation tab</div></div>
+
+                    <h3 class="section-subtitle">Select Location</h3>
+                    <div id="bgGallery" class="gallery-scroll"><div class="empty-gallery">Preloaded & your locations appear here</div></div>
+                    <label class="btn-dark" style="margin-top:8px;cursor:pointer;">
+                        <i class="ph-bold ph-plus"></i> Add Your Own Location
+                        <input type="file" id="bgUpload" accept="image/jpeg,image/png,image/webp,.heic" style="display:none;">
+                    </label>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-faders"></i> Production Settings</h2>
+                    <div class="settings-grid">
+                        <div class="input-group" style="grid-column:1/-1;">
+                            <label>Target Category</label>
+                            <select id="categorySelect">
+                                <option value="ShortKurti">ShortKurti</option>
+                                <option value="midi">Midi Dress (Loose Sleeves)</option>
+                                <option value="Sleevless">Sleevless Dress</option>
+                                <option value="knee_length_kurti">Knee Length Kurti</option>
+                                <option value="maternity">Maternity Collection</option>
+                                <option value="gowns">Evening Gowns</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="grid-column:1/-1;">
+                            <label>Select Poses for this Batch</label>
+                            <div id="poseCheckboxes" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg-input);padding:15px;border-radius:6px;border:1px solid var(--border-color);max-height:250px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                    <div id="locWarning" class="loc-warning" style="display:none;"><i class="ph-bold ph-warning"></i><span id="locWarningText"></span></div>
+                    <button id="generateBtn" class="btn-gold" style="margin-top:10px;"><i class="ph-bold ph-magic-wand"></i> Initialize Photoshoot Batch</button>
+                    <small class="disclaimer"><i class="ph ph-info"></i> 1 image = 1 credit · AI can make mistakes — please review outputs.</small>
+                </div>
+
+                <div class="panel" id="progressPanel" style="display:none;border-color:var(--accent);">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.9rem;font-weight:bold;color:var(--accent);">
+                        <span id="progressStatus">Preparing...</span><span id="progressPercent">0%</span>
+                    </div>
+                    <div style="width:100%;height:10px;background:var(--bg-input);border-radius:5px;overflow:hidden;">
+                        <div id="progressBar" style="width:0%;height:100%;background:var(--accent);transition:width 0.4s ease;"></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-terminal-window"></i> Process Terminal</h2>
+                    <div class="terminal" id="terminal" style="height:180px;"></div>
+                </div>
+
+                <div class="panel" style="flex-grow:1;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:10px;margin-bottom:10px;">
+                        <h2 class="panel-title" style="border:none;padding:0;margin:0;"><i class="ph-bold ph-images"></i> Production Gallery</h2>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <select id="downloadFormat" class="mini-select"><option value="png">PNG</option><option value="jpeg">JPEG</option></select>
+                            <button id="downloadZipBtn" class="btn-dark" style="width:auto;padding:8px 15px;"><i class="ph-bold ph-file-zip"></i> ZIP</button>
+                        </div>
+                    </div>
+                    <div id="productionGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;min-height:250px;">
+                        <div class="empty-gallery" id="galleryPlaceholder" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:50px 0;">
+                            <i class="ph ph-image" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:10px;"></i>Generated images appear here.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB 2: MODEL CREATION ===== -->
+    <div class="tab-pane" id="tab-modelcreation">
+        <div class="grid-layout">
+            <div class="left-col">
+                <div class="panel" style="border-top:3px solid var(--accent);">
+                    <h2 class="panel-title"><i class="ph-bold ph-user-focus"></i> Create Base Model</h2>
+                    <p class="panel-note">Upload a <strong>mannequin photo of your dress</strong>, an optional <strong>reference model</strong>, and a <strong>location</strong>. We generate a real model wearing your dress in <strong>plain white</strong>, in that location — your reusable identity.</p>
+
+                    <label class="mc-label">1. Mannequin Dress <span class="req">required</span></label>
+                    <label class="upload-zone mc-zone" id="mcDressZone">
+                        <input type="file" id="mcDressUpload" accept="image/jpeg,image/png,image/webp,.heic">
+                        <div class="mc-thumb" id="mcDressThumb" style="display:none;"><img id="mcDressImg"></div>
+                        <div class="upload-content" id="mcDressPrompt"><i class="ph ph-dress"></i><span>Upload Mannequin Dress</span></div>
+                    </label>
+
+                    <label class="mc-label" style="margin-top:14px;">2. Reference Model <span class="opt">optional</span></label>
+                    <label class="upload-zone mc-zone" id="mcRefZone">
+                        <input type="file" id="mcRefUpload" accept="image/jpeg,image/png,image/webp,.heic">
+                        <div class="mc-thumb" id="mcRefThumb" style="display:none;"><img id="mcRefImg"></div>
+                        <div class="upload-content" id="mcRefPrompt"><i class="ph ph-user"></i><span>Upload Reference Model</span></div>
+                    </label>
+                    <div class="rights-disclaimer"><i class="ph-bold ph-warning-circle"></i><span>By uploading a reference model, you confirm you have the rights to use this image. Do <strong>not</strong> upload celebrities, influencers, or anyone you lack permission to use. Morphing others' likenesses is prohibited.</span></div>
+
+                    <label class="mc-label" style="margin-top:14px;">3. Location <span class="req">required</span></label>
+                    <div class="loc-toggle">
+                        <button type="button" class="loc-tab active" data-loc="preloaded">Preloaded</button>
+                        <button type="button" class="loc-tab" data-loc="own">Upload Your Own</button>
+                    </div>
+                    <div id="mcLocPreloadedWrap"><div id="mcLocPreloadedGallery" class="gallery-scroll" style="grid-template-columns:repeat(3,1fr);max-height:180px;"></div></div>
+                    <div id="mcLocOwnWrap" style="display:none;">
+                        <label class="upload-zone mc-zone" id="mcLocZone">
+                            <input type="file" id="mcLocUpload" accept="image/jpeg,image/png,image/webp,.heic">
+                            <div class="mc-thumb" id="mcLocThumb" style="display:none;"><img id="mcLocImg"></div>
+                            <div class="upload-content" id="mcLocPrompt"><i class="ph ph-image-square"></i><span>Upload Location Photo</span></div>
+                        </label>
+                    </div>
+                    <div class="rights-disclaimer" style="border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.08);"><i class="ph-bold ph-info" style="color:var(--info);"></i><span><strong>Remember this location.</strong> During production you must select the <strong>same</strong> location, or the image will be incorrect.</span></div>
+                    <div id="mcLocSelected" class="mc-loc-selected" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-sliders-horizontal"></i> Model Attributes</h2>
+                    <div class="settings-grid">
+                        <div class="input-group"><label>Age Group</label>
+                            <select id="mcAgeGroup"><option>1-5</option><option>5-8</option><option>8-14</option><option>15-18</option><option value="18-26" selected>18-26</option><option>26-40</option><option>40-50</option></select>
+                        </div>
+                        <div class="input-group"><label>Ethnicity</label><input type="text" id="mcEthnicity" class="mc-text" value="Indian"></div>
+                        <div class="input-group"><label>Hair Style</label><select id="mcHairStyle"><option>Short</option><option selected>Medium</option><option>Long</option></select></div>
+                        <div class="input-group"><label>Hair Colour</label><select id="mcHairColour"><option selected>Black</option><option>Blonde</option><option>Brown</option><option>Red</option><option>Grey</option></select></div>
+                        <div class="input-group"><label>Skin Tone</label><select id="mcSkinTone"><option selected>Fair</option><option>White</option><option>Wheatish</option><option>Dusky</option><option>African</option></select></div>
+                        <div class="input-group"><label>Accessories</label><input type="text" id="mcAccessories" class="mc-text" value="rose gold colour small dial womans analogue watch on left hand"></div>
+                    </div>
+                    <button id="mcGenerateBtn" class="btn-gold" style="margin-top:14px;"><i class="ph-bold ph-sparkle"></i> Create Base Model</button>
+                    <small class="disclaimer"><i class="ph ph-info"></i> 1 model = 1 credit · AI can make mistakes — please review outputs.</small>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-terminal-window"></i> Process Terminal</h2>
+                    <div class="terminal" id="terminalMC" style="height:120px;"></div>
+                </div>
+
+                <div class="panel" style="flex-grow:1;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:10px;margin-bottom:10px;">
+                        <h2 class="panel-title" style="border:none;padding:0;margin:0;"><i class="ph-bold ph-users-three"></i> Created Models</h2>
+                        <select id="mcDownloadFormat" class="mini-select"><option value="png">PNG</option><option value="jpeg">JPEG</option></select>
+                    </div>
+                    <div id="createdModelsGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;min-height:200px;">
+                        <div class="empty-gallery" id="mcGalleryPlaceholder" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 0;">
+                            <i class="ph ph-user-circle-plus" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:10px;"></i>Created models appear here and in "Select AI Identity".
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB 3: VIDEO ===== -->
+    <div class="tab-pane" id="tab-video">
+        <div class="grid-layout">
+            <div class="left-col">
+                <div class="panel" style="border-top:3px solid var(--accent);">
+                    <h2 class="panel-title"><i class="ph-bold ph-video-camera"></i> Generate Video</h2>
+                    <p class="panel-note">Upload an image and describe the motion. We generate a short video (no audio).</p>
+                    <label class="upload-zone mc-zone" id="vidImageZone">
+                        <input type="file" id="vidImageUpload" accept="image/jpeg,image/png,image/webp,.heic">
+                        <div class="mc-thumb" id="vidImageThumb" style="display:none;"><img id="vidImageImg"></div>
+                        <div class="upload-content" id="vidUploadPrompt"><i class="ph ph-image-square"></i><span>Upload Source Image</span></div>
+                    </label>
+                    <div class="input-group" style="margin-top:14px;">
+                        <label>Prompt</label>
+                        <textarea id="vidPromptInput" class="mc-text" rows="4" placeholder="e.g. the model slowly turns and smiles, fabric flowing gently"></textarea>
+                    </div>
+                    <button id="vidGenerateBtn" class="btn-gold" style="margin-top:14px;"><i class="ph-bold ph-film-slate"></i> Generate Video</button>
+                    <small class="disclaimer"><i class="ph ph-info"></i> 1 video = 2 credits · AI can make mistakes — please review outputs.</small>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="panel">
+                    <h2 class="panel-title"><i class="ph-bold ph-terminal-window"></i> Process Terminal</h2>
+                    <div class="terminal" id="terminalVid" style="height:120px;"></div>
+                </div>
+                <div class="panel" style="flex-grow:1;">
+                    <h2 class="panel-title"><i class="ph-bold ph-film-strip"></i> Generated Videos</h2>
+                    <div id="videoGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:15px;min-height:200px;">
+                        <div class="empty-gallery" id="vidGalleryPlaceholder" style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 0;">
+                            <i class="ph ph-video" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:10px;"></i>Generated videos appear here.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- config + auth first, then guard, then feature scripts -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/credits.js"></script>
+<script src="js/helpers.js"></script>
+<script src="js/terminal.js"></script>
+<script src="js/poses.js"></script>
+<script src="js/file-manager.js"></script>
+<script src="js/locations.js"></script>
+<script src="js/model-creator.js"></script>
+<script src="js/video.js"></script>
+<script src="js/app.js"></script>
+<script src="js/tabs.js"></script>
+<script>
+// Auth guard + initial load
+document.addEventListener('DOMContentLoaded', async () => {
+    const session = await window.Auth.requireSession();
+    if (!session) return;
+    document.getElementById('logoutBtn').addEventListener('click', () => window.Auth.signOut());
+    await window.Credits.refresh();
+});
+</script>
+</body>
+</html>

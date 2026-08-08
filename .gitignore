@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+worker/node_modules/
+
+# wrangler / cloudflare
+.wrangler/
+worker/.wrangler/
+.dev.vars
+worker/.dev.vars
+
+# secrets (never commit)
+.env
+*.local
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
