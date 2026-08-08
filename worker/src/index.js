@@ -1,4 +1,4 @@
-// --- worker/src/index.js: TruePose AI API (Cloudflare Worker) ---
+// --- worker/src/index.js: TruePose AI API (Cloudflare Worker) --
 // Secure backend. Holds the Gemini key, verifies each user, deducts credits
 // atomically, calls Google, stores results in R2, records generations.
 //
@@ -245,3 +245,4 @@ export default {
         }
     }
 };
+
