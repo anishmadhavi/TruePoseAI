@@ -45,7 +45,7 @@ function uuid() { return crypto.randomUUID(); }
 
 async function requireOwner(request, env) {
     const token = getBearer(request);
-    const payload = await verifyToken(token, env.SUPABASE_JWT_SECRET);
+    const payload = await verifyToken(token, env);
     const owner = await getOwner(env, payload.sub);
     if (!owner) throw new Error('OWNER_NOT_FOUND');
     return owner; // { id, status, credit_balance, storage_used }
